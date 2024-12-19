@@ -1,8 +1,7 @@
 {
   "remote": "http://localhost:3000/download",
   "timeout": 60,
-  "authHeader": "asdf qwer",
-  "getCredentials": "asdf=1234",
+  "basicCredentials": "username:password",
   "installDirectory": "./test/app",
   "postInstall": [
     "npm i",

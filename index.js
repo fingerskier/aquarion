@@ -69,14 +69,15 @@ try {
 
 
 const { 
-  remote,
+  authHeader,
+  basicCredentials,
+  flush=false,
+  getCredentials,
   installDirectory,
   postInstall,
-  authHeader,
-  timeout,
-  getCredentials,
-  basicCredentials,
+  remote,
   runCommand,
+  timeout,
 } = config
 
 const DEFAULT_TIMEOUT = 10 // Default timeout in seconds
@@ -98,9 +99,14 @@ if (doDownload) {
     console.error(`Config file must include "remote" property - this is host's URL for the app.`)
     process.exit(1)
   }
-  
-  
+    
   let formattedRemote = remote
+  
+  
+  if (flush) {
+    console.log(`Flushing contents of ${installDirectory}...`)
+    fs.rmSync(installDirectory, { recursive: true, force: true })
+  }
   
   if (getCredentials) {
     const url = new URL(remote)
@@ -188,7 +194,7 @@ if (doDownload) {
     const commands = Array.isArray(postInstall) ? postInstall : [postInstall]
     
     for (const command of commands) {
-      console.log(`Executing: ${command}`)
+      console.log(`Execution>> ${command}`)
       await new Promise((resolve, reject) => {
         exec(command, { cwd: installDirectory }, (execErr, stdout, stderr) => {
           if (execErr) {
@@ -211,7 +217,7 @@ if (doDownload) {
 
 
 if (runCommand) {
-  console.log(`Running command: ${runCommand}`)
+  console.log(`Running application.`)
   
   exec(runCommand, { cwd: installDirectory }, (execErr, stdout, stderr) => {
     if (execErr) {

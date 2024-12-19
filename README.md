@@ -35,20 +35,20 @@ Example `config.json`:
 ```
 {
   remote: "https://some.server.com",
+  timeout: 30,
   authHeader: "Authorize somesuchanwhathaveyou",
   getCredentials: "api_key=1234",
   basicCredentials: "user:password",
   installDirectory: "./test/app",
-  preInstall: "npm install",
   postInstall: "npm run build",
-  installedCommand: "best-app-ever",
+  runCommand: 'node .',
 }
 ```
 
 ### Caveats
 
 The goal of this app is to get code deployed...not build it on the fly.
-So, things like `preinstall` settings or installing a `.sh` or `.cmd` are pushed off to the deployed app.
+So, things like `preinstall` settings or installing a `.sh` or `.cmd` or platform-specific stuff are pushed off to the deployed app.
 
 
 `remote` ~ the URL of the remote server from which to download the app.
@@ -61,6 +61,8 @@ So, things like `preinstall` settings or installing a `.sh` or `.cmd` are pushed
 `basicCredentials` ~ for HTTP Basic auth: this adds the appropriate header
   * this will override prior more general Auth header
 `installDirectory` ~ whereas to put the unzipped files
+`flush` ~ boolean to indicate whether to empty the `installDirectory` before installing from the downloaded `.zip`
 `postInstall` ~ command(s) to run after locuting the files
   * can be a string or an array of string-commands or an object
   * if an object, the key is the <platform-name> and the value is a string or array of string-commands
+`runCommand` ~ the command needed to start the app
