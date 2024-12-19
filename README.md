@@ -21,6 +21,9 @@ Given that nodejs is installed on the system:
 {
   remote: "https://some.server.com",
   authHeader: "Authorize somesuchanwhathaveyou",
+  getCredentials: "api_key=1234",
+  basicCredentials: "user:password",
+  directory: "./test/app",
   preInstall: "npm install",
   postInstall: "npm run build",
   installedCommand: "best-app-ever",

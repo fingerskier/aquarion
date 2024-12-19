@@ -1,7 +1,8 @@
 {
-  "remote": "http://localhost:3000",
-  "authHeader": "Authorize somesuchanwhathaveyou",
-  "preInstall": "npm install",
-  "postInstall": "npm run build",
-  "installedCommand": "best-app-ever"
+  "remote": "http://localhost:3000/download",
+  "installDirectory": "./test/app",
+  "postInstall": [
+    "npm i",
+    "node ."
+  ]
 }

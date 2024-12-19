@@ -1,19 +1,31 @@
-import download from './download'
+import download from './download.js'
 import express from 'express'
+import path from 'path'
 
+const __dirname = path.resolve()
 const app = express()
 
 
-app.get('/download', (req, res) => {
-  const file = download()
-
-  res.download(file, 'example.zip', (err) => {
-    if (err) {
-      console.error('Error sending file:', err)
-    } else {
-      console.log('File sent successfully!')
-    }
-  })
+app.get('/download', async(req, res)=>{
+  try {
+    const sourcePath = path.join(__dirname, '..', 'eg')
+    const targetPath = path.join(__dirname, 'eq.zip')
+    
+    const file = await download(sourcePath, targetPath)
+    
+    
+    res.download(file, targetPath, (err) => {
+      if (err) {
+        console.error('Error sending file:', err)
+      } else {
+        console.log('File sent successfully!')
+      }
+    })
+  } catch (error) {
+    console.error('Error:', error.message)
+  } finally {
+    console.log('/download fin')
+  }
 })
 
 

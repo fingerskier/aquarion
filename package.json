@@ -8,9 +8,12 @@
   "type": "module",
   "version": "1.0.1",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node . test/config.json"
   },
   "keywords": [],
   "author": "",
-  "license": "LGPL-3.0-or-later"
+  "license": "LGPL-3.0-or-later",
+  "dependencies": {
+    "unzipper": "^0.12.3"
+  }
 }
