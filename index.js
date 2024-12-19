@@ -199,35 +199,36 @@ fs.readFile(configPath, 'utf8', (err, data) => {
         })
       }
 
-      if (installedCommand) {
-        console.log(`Setting up global command: aqua-${installedCommand}`)
-        const linkCommand = process.platform === 'win32'
-          ? `mklink "${path.join(process.env.APPDATA, 'npm', `aqua-${installedCommand}.cmd`)}" "${path.join(installDirectory, installedCommand)}"`
-          : `ln -s "${path.join(installDirectory, installedCommand)}" "/usr/local/bin/aqua-${installedCommand}"`
+      // if (installedCommand) {
+      //   console.log(`Setting up global command: aqua-${installedCommand}`)
+      //   const linkCommand = process.platform === 'win32'
+      //     ? `mklink "${path.join(process.env.APPDATA, 'npm', `aqua-${installedCommand}.cmd`)}" "${path.join(installDirectory, installedCommand)}"`
+      //     : `ln -s "${path.join(installDirectory, installedCommand)}" "/usr/local/bin/aqua-${installedCommand}"`
 
-        try {
-          execSync(linkCommand, { stdio: 'inherit' })
-          console.log(`Global command aqua-${installedCommand} installed successfully.`)
-        } catch (err) {
-          console.error('Failed to create global command. Attempting to prompt for elevated permissions...')
-          if (process.platform === 'win32') {
-            await elevateOnWindows(linkCommand)
-            console.log(`Global command aqua-${installedCommand} installed successfully with elevated permissions on Windows.`)
-          } else {
-            const elevate = await promptElevatePermissions()
-            if (elevate) {
-              try {
-                execSync(`sudo ${linkCommand}`, { stdio: 'inherit' })
-                console.log(`Global command aqua-${installedCommand} installed successfully with elevated permissions.`)
-              } catch (sudoErr) {
-                console.error(`Failed to create global command even with elevated permissions: ${sudoErr.message}`)
-              }
-            } else {
-              console.log('Global command installation aborted by user.')
-            }
-          }
-        }
-      }
+      //   try {
+      //     execSync(linkCommand, { stdio: 'inherit' })
+      //     console.log(`Global command aqua-${installedCommand} installed successfully.`)
+      //   } catch (err) {
+      //     console.error('Attempting to prompt for elevated permissions...')
+          
+      //     if (process.platform === 'win32') {
+      //       await elevateOnWindows(linkCommand)
+      //       console.log(`Global command aqua-${installedCommand} installed successfully with elevated permissions on Windows.`)
+      //     } else {
+      //       const elevate = await promptElevatePermissions()
+      //       if (elevate) {
+      //         try {
+      //           execSync(`sudo ${linkCommand}`, { stdio: 'inherit' })
+      //           console.log(`Global command aqua-${installedCommand} installed successfully with elevated permissions.`)
+      //         } catch (sudoErr) {
+      //           console.error(`Failed to create global command even with elevated permissions: ${sudoErr.message}`)
+      //         }
+      //       } else {
+      //         console.log('Global command installation aborted by user.')
+      //       }
+      //     }
+      //   }
+      // }
       
       console.log('All postInstall commands executed successfully.')
     } catch (err) {
