@@ -1,15 +1,23 @@
 #!/usr/bin/env node
 
+/*
+Process
+1. Read the config file
+2. Download the app package
+   a. construct the URL
+   b. handle the request
+3. Install the app package
+   a. unzip the package
+   b. run post-install commands
+   c. setup the "installedCommand" per the OS (if possible)
+*/
+
 import fs from 'fs'
 import http from 'http'
 import https from 'https'
 import { exec } from 'child_process'
 import path from 'path'
 import unzipper from 'unzipper'
-import { fileURLToPath } from 'url'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
 
 if (process.argv.length < 3) {
   console.error(`Usage: aquarion <config-file>
@@ -19,10 +27,10 @@ if (process.argv.length < 3) {
   {
     remote: "https://some.server.com",
     authHeader: "Authorize somesuchanwhathaveyou",
+    timeout: 5,
     getCredentials: "api_key=1234",
     basicCredentials: "user:password",
     directory: "./test/app",
-    preInstall: "npm install",
     postInstall: ["npm run build", "npm start"],
     installedCommand: "best-app-ever",
   }
@@ -48,19 +56,50 @@ fs.readFile(configPath, 'utf8', (err, data) => {
     process.exit(1)
   }
   
-  const { remote, installDirectory, postInstall } = config
+  const { remote, installDirectory, postInstall, authHeader, timeout, getCredentials, basicAuth } = config
+  
+  const DEFAULT_TIMEOUT = 10 // Default timeout in seconds
+  const effectiveTimeout = timeout || DEFAULT_TIMEOUT
   
   if (!remote || !installDirectory || !postInstall) {
     console.error('Config file must include "remote", "installDirectory", and "postInstall" properties.')
     process.exit(1)
   }
+
+  let formattedRemote = remote
+  if (getCredentials) {
+    const url = new URL(remote)
+    if (typeof getCredentials === 'string') {
+      const [key, value] = getCredentials.split('=')
+      if (key && value) {
+        url.searchParams.append(key, value)
+      }
+    } else if (Array.isArray(getCredentials) && getCredentials.length === 2) {
+      const [key, value] = getCredentials
+      if (key && value) {
+        url.searchParams.append(key, value)
+      }
+    }
+    formattedRemote = url.toString()
+  }
   
-  const downloadFile = (url, dest) => {
+  const downloadFile = (url, dest, timeout) => {
     return new Promise((resolve, reject) => {
       const file = fs.createWriteStream(dest)
       const protocol = url.startsWith('https') ? https : http
       
-      protocol.get(url, (response) => {
+      const options = new URL(url)
+      options.headers = {}
+
+      if (authHeader) {
+        options.headers.Authorization = authHeader
+      }
+
+      if (basicAuth) {
+        options.headers.Authorization = `Basic ${Buffer.from(basicAuth).toString('base64')}`
+      }
+      
+      const request = protocol.get(options, (response) => {
         if (response.statusCode !== 200) {
           reject(new Error(`Download failed with status code: ${response.statusCode}`))
           return
@@ -73,6 +112,13 @@ fs.readFile(configPath, 'utf8', (err, data) => {
       }).on('error', (downloadErr) => {
         fs.unlink(dest, () => reject(downloadErr))
       })
+
+      if (timeout) {
+        request.setTimeout(timeout * 1000, () => {
+          request.abort()
+          reject(new Error(`Download timed out after ${timeout} seconds`))
+        })
+      }
     })
   }
   
@@ -87,7 +133,7 @@ fs.readFile(configPath, 'utf8', (err, data) => {
     
     try {
       console.log('Downloading file...')
-      await downloadFile(remote, zipPath)
+      await downloadFile(formattedRemote, zipPath, effectiveTimeout)
       console.log('Download complete. Unzipping file...')
       
       await new Promise((resolve, reject) => {

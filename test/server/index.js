@@ -6,6 +6,22 @@ const __dirname = path.resolve()
 const app = express()
 
 
+app.use(async(req,res,next)=>{
+  console.clear()
+  console.log('URL:', `http://localhost:${PORT}${req.url}`)
+  console.log('QUERY params:', req.query)
+  
+  // print auth header(s)
+  console.log(
+    'AUTH headers:',
+    req.headers,
+    req.headers.Authorization,
+  )
+  
+  next()
+})
+
+
 app.get('/download', async(req, res)=>{
   try {
     const sourcePath = path.join(__dirname, '..', 'eg')
@@ -33,5 +49,5 @@ app.get('/download', async(req, res)=>{
 const PORT = 3000
 
 app.listen(PORT, () => {
-    console.log(`Test server running on http://localhost:${PORT}`)
+  console.log(`Test server running on http://localhost:${PORT}`)
 })

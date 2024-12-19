@@ -1,5 +1,8 @@
 {
   "remote": "http://localhost:3000/download",
+  "timeout": 60,
+  "basicAuth": "username:password",
+  "getCredentials": "asdf=1234",
   "installDirectory": "./test/app",
   "postInstall": [
     "npm i",
