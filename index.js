@@ -15,9 +15,11 @@ Process
 import fs from 'fs'
 import http from 'http'
 import https from 'https'
-import { exec } from 'child_process'
+import { exec, execSync } from 'child_process'
 import path from 'path'
 import unzipper from 'unzipper'
+import readline from 'readline'
+import sudoPrompt from 'sudo-prompt'
 
 if (process.argv.length < 3) {
   console.error(`Usage: aquarion <config-file>
@@ -56,7 +58,7 @@ fs.readFile(configPath, 'utf8', (err, data) => {
     process.exit(1)
   }
   
-  const { remote, installDirectory, postInstall, authHeader, timeout, getCredentials, basicAuth } = config
+  const { remote, installDirectory, postInstall, authHeader, timeout, getCredentials, basicCredentials, installedCommand } = config
   
   const DEFAULT_TIMEOUT = 10 // Default timeout in seconds
   const effectiveTimeout = timeout || DEFAULT_TIMEOUT
@@ -82,7 +84,39 @@ fs.readFile(configPath, 'utf8', (err, data) => {
     }
     formattedRemote = url.toString()
   }
-  
+
+  const promptElevatePermissions = () => {
+    return new Promise((resolve) => {
+      const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+      })
+
+      rl.question('This operation requires elevated permissions. Do you want to proceed? (yes/no): ', (answer) => {
+        rl.close()
+        if (answer.toLowerCase() === 'yes' || answer.toLowerCase() === 'y') {
+          resolve(true)
+        } else {
+          resolve(false)
+        }
+      })
+    })
+  }
+
+  const elevateOnWindows = (command) => {
+    return new Promise((resolve, reject) => {
+      sudoPrompt.exec(command, { name: 'Aquarion Installer' }, (error, stdout, stderr) => {
+        if (error) {
+          reject(new Error(`Failed to elevate permissions: ${error.message}`))
+        } else {
+          console.log(stdout)
+          if (stderr) console.error(stderr)
+          resolve()
+        }
+      })
+    })
+  }
+
   const downloadFile = (url, dest, timeout) => {
     return new Promise((resolve, reject) => {
       const file = fs.createWriteStream(dest)
@@ -95,8 +129,8 @@ fs.readFile(configPath, 'utf8', (err, data) => {
         options.headers.Authorization = authHeader
       }
 
-      if (basicAuth) {
-        options.headers.Authorization = `Basic ${Buffer.from(basicAuth).toString('base64')}`
+      if (basicCredentials) {
+        options.headers.Authorization = `Basic ${Buffer.from(basicCredentials).toString('base64')}`
       }
       
       const request = protocol.get(options, (response) => {
@@ -163,6 +197,36 @@ fs.readFile(configPath, 'utf8', (err, data) => {
             resolve()
           })
         })
+      }
+
+      if (installedCommand) {
+        console.log(`Setting up global command: aqua-${installedCommand}`)
+        const linkCommand = process.platform === 'win32'
+          ? `mklink "${path.join(process.env.APPDATA, 'npm', `aqua-${installedCommand}.cmd`)}" "${path.join(installDirectory, installedCommand)}"`
+          : `ln -s "${path.join(installDirectory, installedCommand)}" "/usr/local/bin/aqua-${installedCommand}"`
+
+        try {
+          execSync(linkCommand, { stdio: 'inherit' })
+          console.log(`Global command aqua-${installedCommand} installed successfully.`)
+        } catch (err) {
+          console.error('Failed to create global command. Attempting to prompt for elevated permissions...')
+          if (process.platform === 'win32') {
+            await elevateOnWindows(linkCommand)
+            console.log(`Global command aqua-${installedCommand} installed successfully with elevated permissions on Windows.`)
+          } else {
+            const elevate = await promptElevatePermissions()
+            if (elevate) {
+              try {
+                execSync(`sudo ${linkCommand}`, { stdio: 'inherit' })
+                console.log(`Global command aqua-${installedCommand} installed successfully with elevated permissions.`)
+              } catch (sudoErr) {
+                console.error(`Failed to create global command even with elevated permissions: ${sudoErr.message}`)
+              }
+            } else {
+              console.log('Global command installation aborted by user.')
+            }
+          }
+        }
       }
       
       console.log('All postInstall commands executed successfully.')

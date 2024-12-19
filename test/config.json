@@ -7,5 +7,6 @@
   "postInstall": [
     "npm i",
     "node ."
-  ]
+  ],
+  "installedCommand": "test"
 }

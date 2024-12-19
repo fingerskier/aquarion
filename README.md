@@ -1,9 +1,21 @@
 # Aquarion
 Remote app deployment system
 
+
+## Overview
+
+Allows deployment of a nodejs app to any system that has nodejs installed.
+
+
+
+
 ## Usage
 
 Given that nodejs is installed on the system:
+
+You provide a `config.json` with necessary info.
+- can contain credentials
+- can be auto-generated
 
 `npx aquarion my-config.json`
 
