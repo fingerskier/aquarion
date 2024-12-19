@@ -6,7 +6,7 @@
   "installDirectory": "./test/app",
   "postInstall": [
     "npm i",
-    "node ."
+    "echo second arbitrary command"
   ],
-  "installedCommand": "test"
+  "runCommand": "node ."
 }

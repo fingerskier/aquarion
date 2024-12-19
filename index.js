@@ -15,14 +15,12 @@ Process
 import fs from 'fs'
 import http from 'http'
 import https from 'https'
-import { exec, execSync } from 'child_process'
+import { exec } from 'child_process'
 import path from 'path'
 import unzipper from 'unzipper'
-import readline from 'readline'
-import sudoPrompt from 'sudo-prompt'
 
 if (process.argv.length < 3) {
-  console.error(`Usage: aquarion <config-file>
+  console.error(`Usage: aquarion <config-file> [options]
   
   config-file possibilities:
   
@@ -36,39 +34,74 @@ if (process.argv.length < 3) {
     postInstall: ["npm run build", "npm start"],
     installedCommand: "best-app-ever",
   }
+  
+  options:
+    update: Download the app regardless of whether it's already installed
 `)
   
   process.exit(1)
 }
 
-const configPath = process.argv[2]
+// Get CLI arguments
+const [,, configPath, secondArg] = process.argv
+
+// Check for "update" flag
+const doingUpdate = secondArg === 'update'
+
+
+if (!configPath) {
+  console.error('Usage: aquarion <config-file> [update]')
+  process.exit(1)
+}
 
 // Read config file
-fs.readFile(configPath, 'utf8', (err, data) => {
-  if (err) {
-    console.error(`Failed to read config file: ${err.message}`)
-    process.exit(1)
-  }
-  
-  let config
-  try {
-    config = JSON.parse(data)
-  } catch (parseErr) {
-    console.error(`Failed to parse config file: ${parseErr.message}`)
-    process.exit(1)
-  }
-  
-  const { remote, installDirectory, postInstall, authHeader, timeout, getCredentials, basicCredentials, installedCommand } = config
-  
-  const DEFAULT_TIMEOUT = 10 // Default timeout in seconds
-  const effectiveTimeout = timeout || DEFAULT_TIMEOUT
-  
-  if (!remote || !installDirectory || !postInstall) {
-    console.error('Config file must include "remote", "installDirectory", and "postInstall" properties.')
-    process.exit(1)
-  }
+const configData = fs.readFileSync(configPath, 'utf8')
 
+let config
+
+
+try {
+  config = JSON.parse(configData)
+} catch (parseErr) {
+  console.error(`Failed to parse config file: ${parseErr.message}`)
+  process.exit(1)
+}
+
+
+const { 
+  remote,
+  installDirectory,
+  postInstall,
+  authHeader,
+  timeout,
+  getCredentials,
+  basicCredentials,
+  runCommand,
+} = config
+
+const DEFAULT_TIMEOUT = 10 // Default timeout in seconds
+const effectiveTimeout = timeout || DEFAULT_TIMEOUT
+
+let doDownload = true
+
+
+// Check if the installDirectory exists
+if (fs.existsSync(installDirectory) && !doingUpdate) {
+  console.log(`Already installed, skipping download.`)
+  
+  doDownload = false
+}
+
+
+if (doDownload) {
+  if (!remote) {
+    console.error(`Config file must include "remote" property - this is host's URL for the app.`)
+    process.exit(1)
+  }
+  
+  
   let formattedRemote = remote
+  
   if (getCredentials) {
     const url = new URL(remote)
     if (typeof getCredentials === 'string') {
@@ -84,39 +117,7 @@ fs.readFile(configPath, 'utf8', (err, data) => {
     }
     formattedRemote = url.toString()
   }
-
-  const promptElevatePermissions = () => {
-    return new Promise((resolve) => {
-      const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout
-      })
-
-      rl.question('This operation requires elevated permissions. Do you want to proceed? (yes/no): ', (answer) => {
-        rl.close()
-        if (answer.toLowerCase() === 'yes' || answer.toLowerCase() === 'y') {
-          resolve(true)
-        } else {
-          resolve(false)
-        }
-      })
-    })
-  }
-
-  const elevateOnWindows = (command) => {
-    return new Promise((resolve, reject) => {
-      sudoPrompt.exec(command, { name: 'Aquarion Installer' }, (error, stdout, stderr) => {
-        if (error) {
-          reject(new Error(`Failed to elevate permissions: ${error.message}`))
-        } else {
-          console.log(stdout)
-          if (stderr) console.error(stderr)
-          resolve()
-        }
-      })
-    })
-  }
-
+  
   const downloadFile = (url, dest, timeout) => {
     return new Promise((resolve, reject) => {
       const file = fs.createWriteStream(dest)
@@ -156,84 +157,71 @@ fs.readFile(configPath, 'utf8', (err, data) => {
     })
   }
   
+  
   const zipPath = path.join(installDirectory, 'download.zip')
   
+  
   // Ensure the directory exists
-  fs.mkdir(installDirectory, { recursive: true }, async (mkdirErr) => {
-    if (mkdirErr) {
-      console.error(`Failed to create directory: ${mkdirErr.message}`)
+  fs.mkdirSync(installDirectory, { recursive: true })
+  
+  
+  try {
+    console.log('Downloading file...')
+    await downloadFile(formattedRemote, zipPath, effectiveTimeout)
+    console.log('Download complete. Unzipping file...')
+    
+    await new Promise((resolve, reject) => {
+      fs.createReadStream(zipPath)
+      .pipe(unzipper.Extract({ path: installDirectory }))
+      .on('close', resolve)
+      .on('error', reject)
+    })
+    
+    console.log('Unzip complete. Running postInstall commands...')
+  } catch (err) {
+    console.error(err.message)
+    process.exit(1)
+  }
+  
+  
+  if (postInstall) {
+    const commands = Array.isArray(postInstall) ? postInstall : [postInstall]
+    
+    for (const command of commands) {
+      console.log(`Executing: ${command}`)
+      await new Promise((resolve, reject) => {
+        exec(command, { cwd: installDirectory }, (execErr, stdout, stderr) => {
+          if (execErr) {
+            reject(new Error(`Failed to execute command: ${command}, error: ${execErr.message}`))
+            return
+          }
+          
+          console.log(stdout)
+          if (stderr) {
+            console.error(stderr)
+          }
+          resolve()
+        })
+      })
+    }
+    
+    console.log('All postInstall commands executed successfully.')
+  }
+}
+
+
+if (runCommand) {
+  console.log(`Running command: ${runCommand}`)
+  
+  exec(runCommand, { cwd: installDirectory }, (execErr, stdout, stderr) => {
+    if (execErr) {
+      console.error(`Failed to execute command: ${runCommand}, error: ${execErr.message}`)
       process.exit(1)
     }
     
-    try {
-      console.log('Downloading file...')
-      await downloadFile(formattedRemote, zipPath, effectiveTimeout)
-      console.log('Download complete. Unzipping file...')
-      
-      await new Promise((resolve, reject) => {
-        fs.createReadStream(zipPath)
-        .pipe(unzipper.Extract({ path: installDirectory }))
-        .on('close', resolve)
-        .on('error', reject)
-      })
-      
-      console.log('Unzip complete. Running postInstall commands...')
-      
-      const commands = Array.isArray(postInstall) ? postInstall : [postInstall]
-      
-      for (const command of commands) {
-        console.log(`Executing: ${command}`)
-        await new Promise((resolve, reject) => {
-          exec(command, { cwd: installDirectory }, (execErr, stdout, stderr) => {
-            if (execErr) {
-              reject(new Error(`Failed to execute command: ${command}, error: ${execErr.message}`))
-              return
-            }
-            
-            console.log(stdout)
-            if (stderr) {
-              console.error(stderr)
-            }
-            resolve()
-          })
-        })
-      }
-
-      // if (installedCommand) {
-      //   console.log(`Setting up global command: aqua-${installedCommand}`)
-      //   const linkCommand = process.platform === 'win32'
-      //     ? `mklink "${path.join(process.env.APPDATA, 'npm', `aqua-${installedCommand}.cmd`)}" "${path.join(installDirectory, installedCommand)}"`
-      //     : `ln -s "${path.join(installDirectory, installedCommand)}" "/usr/local/bin/aqua-${installedCommand}"`
-
-      //   try {
-      //     execSync(linkCommand, { stdio: 'inherit' })
-      //     console.log(`Global command aqua-${installedCommand} installed successfully.`)
-      //   } catch (err) {
-      //     console.error('Attempting to prompt for elevated permissions...')
-          
-      //     if (process.platform === 'win32') {
-      //       await elevateOnWindows(linkCommand)
-      //       console.log(`Global command aqua-${installedCommand} installed successfully with elevated permissions on Windows.`)
-      //     } else {
-      //       const elevate = await promptElevatePermissions()
-      //       if (elevate) {
-      //         try {
-      //           execSync(`sudo ${linkCommand}`, { stdio: 'inherit' })
-      //           console.log(`Global command aqua-${installedCommand} installed successfully with elevated permissions.`)
-      //         } catch (sudoErr) {
-      //           console.error(`Failed to create global command even with elevated permissions: ${sudoErr.message}`)
-      //         }
-      //       } else {
-      //         console.log('Global command installation aborted by user.')
-      //       }
-      //     }
-      //   }
-      // }
-      
-      console.log('All postInstall commands executed successfully.')
-    } catch (err) {
-      console.error(err.message)
-      process.exit(1)
+    console.log(stdout)
+    if (stderr) {
+      console.error(stderr)
     }
   })
-})
+}
