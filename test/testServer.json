@@ -1,0 +1,9 @@
+{
+  "remote": "http://localhost:3000/download",
+  "timeout": 60,
+  "authHeader": "asdf qwer",
+  "getCredentials": "asdf=1234",
+  "installDirectory": "./test/server",
+  "postInstall": "npm i",
+  "runCommand": "node ."
+}

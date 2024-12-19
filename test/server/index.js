@@ -1,3 +1,6 @@
+import 'dotenv/config.js'
+
+import authMiddleware from './authauth.js'
 import download from './download.js'
 import express from 'express'
 import path from 'path'
@@ -6,20 +9,7 @@ const __dirname = path.resolve()
 const app = express()
 
 
-app.use(async(req,res,next)=>{
-  console.clear()
-  console.log('URL:', `http://localhost:${PORT}${req.url}`)
-  console.log('QUERY params:', req.query)
-  
-  // print auth header(s)
-  console.log(
-    'AUTH headers:',
-    req.headers,
-    req.headers.Authorization,
-  )
-  
-  next()
-})
+app.use(authMiddleware)
 
 
 app.get('/download', async(req, res)=>{
