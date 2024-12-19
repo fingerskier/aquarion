@@ -21,6 +21,8 @@ Given that nodejs is installed on the system:
 {
   remote: "https://some.server.com",
   authHeader: "Authorize somesuchanwhathaveyou",
-  
+  preInstall: "npm install",
+  postInstall: "npm run build",
+  installedCommand: "best-app-ever",
 }
 ```
