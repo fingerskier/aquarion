@@ -81,7 +81,3 @@ i.e. just do npm-level commands via `aquarion` config.
 
 
 ## TODO
-
-* Allow main CLI parm to be a filename or a JSON string
-* Allow GET config parm to be string, array of arrays, or obj
-* Create a test app and E2E tests 
