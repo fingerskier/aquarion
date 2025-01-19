@@ -21,8 +21,12 @@ D. If the target directory exists then the download is skipped: i.e. the client 
 You provide a `config.json` with necessary info:
   e.g. auto-generate a config file which contains necessary settings and temporary credentials.
 
-Run the command:
+Run this command to run normally:
 `npx aquarion config.json`
+
+
+Run this command to update/reinstall:
+`npx aquarium config.json --update`
 
 
 ## Config Deets
@@ -52,13 +56,16 @@ i.e. just do npm-level commands via `aquarion` config.
 ## Config Details
 
 `remote` ~ the URL of the remote server from which to download the app.  
+
 `timeout` ~ number of seconds after which the download attempt is cancelled.  
+
 `getCredentials` ~ for HTTP GET requests: this adds a query string; can be a string or a key/value array:
   * "val=1234"
   * ["key": "val"]
 
 `authHeader` ~ adds an Authorization header to the request
-  * e.g. you could auto-generate a token in this file, client runs it to install, then the token is invalidated whenever you want
+  * e.g. you could auto-generate a token in this file, client runs it to install, then the token is invalidated after (which is okay because `aquarion` will run locally by default after installed.)  
+
 `basicCredentials` ~ for HTTP Basic auth: this adds the appropriate header
   * this will override prior more general Auth header
 
@@ -71,3 +78,10 @@ i.e. just do npm-level commands via `aquarion` config.
   * if an object, the key is the <platform-name> and the value is a string or array of string-commands
 
 `runCommand` ~ the command needed to start the app
+
+
+## TODO
+
+* Allow main CLI parm to be a filename or a JSON string
+* Allow GET config parm to be string, array of arrays, or obj
+* Create a test app and E2E tests 
