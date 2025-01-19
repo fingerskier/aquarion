@@ -19,14 +19,10 @@ D. If the target directory exists then the download is skipped: i.e. the client 
 `npx aquarion <config.json> update`
 
 You provide a `config.json` with necessary info:
-- can contain credentials
-- can be auto-generated
-- can be named whatever you want, innards must be JSON
+  e.g. auto-generate a config file which contains necessary settings and temporary credentials.
 
 Run the command:
-`npx aquarion my-config.json`
-
-Post-install can run an arbitrary list of commands.
+`npx aquarion config.json`
 
 
 ## Config Deets
@@ -45,15 +41,17 @@ Example `config.json`:
 }
 ```
 
-### Caveats
+
+### Further Thoughts
 
 The goal of this app is to get code deployed...not build it on the fly.
-So, things like `preinstall` settings or installing a `.sh` or `.cmd` or platform-specific stuff are pushed off to the deployed app.
+So, things like `preinstall` settings or installing a `.sh` or `.cmd` or platform-specific stuff are best done by the deployed app.
+i.e. just do npm-level commands via `aquarion`.
 
 
 `remote` ~ the URL of the remote server from which to download the app.
 `timeout` ~ number of seconds after which the download attempt is cancelled
-`getCredentials` ~ for HTTP GET requests: this adds the appropriate query string; can be a string or a key/value array:
+`getCredentials` ~ for HTTP GET requests: this adds a query string; can be a string or a key/value array:
   * "val=1234"
   * ["key": "val"]
 `authHeader` ~ adds an Authorization header to the request
