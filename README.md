@@ -46,21 +46,28 @@ Example `config.json`:
 
 The goal of this app is to get code deployed...not build it on the fly.
 So, things like `preinstall` settings or installing a `.sh` or `.cmd` or platform-specific stuff are best done by the deployed app.
-i.e. just do npm-level commands via `aquarion`.
+i.e. just do npm-level commands via `aquarion` config.
 
 
-`remote` ~ the URL of the remote server from which to download the app.
-`timeout` ~ number of seconds after which the download attempt is cancelled
+## Config Details
+
+`remote` ~ the URL of the remote server from which to download the app.  
+`timeout` ~ number of seconds after which the download attempt is cancelled.  
 `getCredentials` ~ for HTTP GET requests: this adds a query string; can be a string or a key/value array:
   * "val=1234"
   * ["key": "val"]
+
 `authHeader` ~ adds an Authorization header to the request
   * e.g. you could auto-generate a token in this file, client runs it to install, then the token is invalidated whenever you want
 `basicCredentials` ~ for HTTP Basic auth: this adds the appropriate header
   * this will override prior more general Auth header
-`installDirectory` ~ whereas to put the unzipped files
-`flush` ~ boolean to indicate whether to empty the `installDirectory` before installing from the downloaded `.zip`
+
+`installDirectory` ~ whereas to put the unzipped files.  
+
+`flush` ~ boolean to indicate whether to empty the `installDirectory` before installing from the downloaded `.zip`.  
+
 `postInstall` ~ command(s) to run after locuting the files
   * can be a string or an array of string-commands or an object
   * if an object, the key is the <platform-name> and the value is a string or array of string-commands
+
 `runCommand` ~ the command needed to start the app
