@@ -9,9 +9,9 @@ Facilitates deployment of a nodejs app to any system that has nodejs installed.
 
 ## Caveats
 
-A. Target system needs NodeJS installed
-2. The deployment must be a .zip file
-D. If the target directory exists then the download is skipped: i.e. the client can just run the app... unless the `update` flag is passed to the CLI command (in which case the app is downloaded again.)
+A. Target system needs NodeJS installed  
+2. The deployment must be a .zip file  
+D. If the target directory exists then the download is skipped: i.e. the client can just run the app... unless the `update` flag is passed to the CLI command (in which case the app is downloaded again.)  
 
 
 ## CLI Usage
