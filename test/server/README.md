@@ -6,7 +6,6 @@ The basic idea here is that the server provides a JSON file with info for the cl
 There are two methods available: HTTP Basic auth and API key.
 
 
-
 The `/get/*` routes generate the config.json file for the client.
 
 The client then runs `npx aquarion config.json` to get install the app.

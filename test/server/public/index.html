@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download App</title>
+</head>
+<body>
+    <div>
+        <h1>App Download Page</h1>
+
+        <form action="/getConfig" method="get">
+          <input type="submit" value="Get Configuration">
+        </form>
+
+        <form action="/downloadApp" method="get">
+          <input type="text" name="api_key" placeholder="API Key">
+          <input type="submit" value="Download App">
+        </form>
+        
+        <nav>
+            <a href="/getConfig">Get Configuration</a>
+            <br><br>
+            <a href="/downloadApp">Download App</a>
+        </nav>
+    </div>
+</body>
+</html>
