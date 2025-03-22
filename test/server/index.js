@@ -1,38 +1,17 @@
 import 'dotenv/config.js'
 
-import authMiddleware from './authauth.js'
-import download from './download.js'
+import {basicAuth, apiKeyAuth} from './middleware.js'
+import {downloader, getter} from './implementation.js'
 import express from 'express'
-import path from 'path'
 
-const __dirname = path.resolve()
 const app = express()
 
+global.keys = {}
 
-app.use(authMiddleware)
 
+app.get('/download/apikey', apiKeyAuth, downloader)
 
-app.get('/download', async(req, res)=>{
-  try {
-    const sourcePath = path.join(__dirname, '..', 'eg')
-    const targetPath = path.join(__dirname, 'eq.zip')
-    
-    const file = await download(sourcePath, targetPath)
-    
-    
-    res.download(file, targetPath, (err) => {
-      if (err) {
-        console.error('Error sending file:', err)
-      } else {
-        console.log('File sent successfully!')
-      }
-    })
-  } catch (error) {
-    console.error('Error:', error.message)
-  } finally {
-    console.log('/download fin')
-  }
-})
+app.get('/get/apikey', getter('key'))
 
 
 // Start the server
