@@ -15,7 +15,7 @@ Process
 import fs from 'fs'
 import http from 'http'
 import https from 'https'
-import { exec } from 'child_process'
+import { exec, spawn } from 'child_process'
 import path from 'path'
 import unzipper from 'unzipper'
 
@@ -275,16 +275,20 @@ if (doDownload) {
 
 if (runCommand) {
   console.log(`Running application.`)
-  
-  exec(runCommand, { cwd: installDirectory }, (execErr, stdout, stderr) => {
-    if (execErr) {
-      console.error(`Failed to execute command: ${runCommand}, error: ${execErr.message}`)
-      process.exit(1)
-    }
-    
-    console.log(stdout)
-    if (stderr) {
-      console.error(stderr)
+
+  const child = spawn(runCommand, [], { cwd: installDirectory, shell: true, stdio: 'pipe' })
+
+  child.stdout.pipe(process.stdout)
+  child.stderr.pipe(process.stderr)
+
+  child.on('error', (err) => {
+    console.error(`Failed to execute command: ${runCommand}, error: ${err.message}`)
+    process.exit(1)
+  })
+
+  child.on('close', (code) => {
+    if (code !== 0) {
+      process.exit(code || 1)
     }
   })
 }
