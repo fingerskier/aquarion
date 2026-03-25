@@ -26,7 +26,7 @@ Run this command to run normally:
 
 
 Run this command to update/reinstall:
-`npx aquarium config.json --update`
+`npx aquarion config.json --update`
 
 
 ## Config Deets

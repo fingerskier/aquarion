@@ -45,8 +45,8 @@ if (process.argv.length < 3) {
 // Get CLI arguments
 const [,, configPath, secondArg] = process.argv
 
-// Check for "update" flag
-const doingUpdate = secondArg === 'update'
+// Check for "update" flag (supports both "update" and "--update")
+const doingUpdate = secondArg === 'update' || secondArg === '--update'
 
 
 if (!configPath) {
@@ -128,24 +128,29 @@ if (doDownload) {
     return new Promise((resolve, reject) => {
       const file = fs.createWriteStream(dest)
       const protocol = url.startsWith('https') ? https : http
-      
-      const options = new URL(url)
-      options.headers = {}
+
+      const parsedUrl = new URL(url)
+      const requestOptions = {
+        hostname: parsedUrl.hostname,
+        port: parsedUrl.port,
+        path: parsedUrl.pathname + parsedUrl.search,
+        headers: {},
+      }
 
       if (authHeader) {
-        options.headers.Authorization = authHeader
+        requestOptions.headers.Authorization = authHeader
       }
 
       if (basicCredentials) {
-        options.headers.Authorization = `Basic ${Buffer.from(basicCredentials).toString('base64')}`
+        requestOptions.headers.Authorization = `Basic ${Buffer.from(basicCredentials).toString('base64')}`
       }
-      
-      const request = protocol.get(options, (response) => {
+
+      const request = protocol.get(requestOptions, (response) => {
         if (response.statusCode !== 200) {
           reject(new Error(`Download failed with status code: ${response.statusCode}`))
           return
         }
-        
+
         response.pipe(file)
         file.on('finish', () => {
           file.close(resolve)
@@ -156,7 +161,7 @@ if (doDownload) {
 
       if (timeout) {
         request.setTimeout(timeout * 1000, () => {
-          request.abort()
+          request.destroy()
           reject(new Error(`Download timed out after ${timeout} seconds`))
         })
       }
@@ -191,7 +196,17 @@ if (doDownload) {
   
   
   if (postInstall) {
-    const commands = Array.isArray(postInstall) ? postInstall : [postInstall]
+    let commands
+    if (typeof postInstall === 'object' && !Array.isArray(postInstall)) {
+      // Platform-specific: { win32: "cmd", linux: ["cmd1", "cmd2"], ... }
+      const platformCmds = postInstall[process.platform]
+      if (!platformCmds) {
+        console.log(`No postInstall commands for platform: ${process.platform}`)
+      }
+      commands = platformCmds ? (Array.isArray(platformCmds) ? platformCmds : [platformCmds]) : []
+    } else {
+      commands = Array.isArray(postInstall) ? postInstall : [postInstall]
+    }
     
     for (const command of commands) {
       console.log(`Execution>> ${command}`)
