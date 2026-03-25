@@ -179,16 +179,26 @@ if (doDownload) {
 
       const request = protocol.get(requestOptions, (response) => {
         if (response.statusCode !== 200) {
+          file.close(() => fs.unlink(dest, () => {}))
+          response.resume()
           reject(new Error(`Download failed with status code: ${response.statusCode}`))
           return
         }
 
         response.pipe(file)
         file.on('finish', () => {
-          file.close(resolve)
+          file.close((err) => {
+            if (err) reject(err)
+            else resolve()
+          })
         })
       }).on('error', (downloadErr) => {
-        fs.unlink(dest, () => reject(downloadErr))
+        file.close(() => fs.unlink(dest, () => reject(downloadErr)))
+      })
+
+      file.on('error', (fileErr) => {
+        request.destroy()
+        file.close(() => fs.unlink(dest, () => reject(fileErr)))
       })
 
       if (timeout) {
