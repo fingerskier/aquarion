@@ -54,8 +54,20 @@ if (!configPath) {
   process.exit(1)
 }
 
-// Read config file
-const configData = fs.readFileSync(configPath, 'utf8')
+// Read config: supports a file path or an inline JSON string
+let configData
+
+if (configPath.trimStart().startsWith('{')) {
+  // Inline JSON string
+  configData = configPath
+} else {
+  try {
+    configData = fs.readFileSync(configPath, 'utf8')
+  } catch (readErr) {
+    console.error(`Failed to read config file: ${readErr.message}`)
+    process.exit(1)
+  }
+}
 
 let config
 
@@ -63,7 +75,7 @@ let config
 try {
   config = JSON.parse(configData)
 } catch (parseErr) {
-  console.error(`Failed to parse config file: ${parseErr.message}`)
+  console.error(`Failed to parse config: ${parseErr.message}`)
   process.exit(1)
 }
 
@@ -111,13 +123,33 @@ if (doDownload) {
   if (getCredentials) {
     const url = new URL(remote)
     if (typeof getCredentials === 'string') {
-      const [key, value] = getCredentials.split('=')
-      if (key && value) {
-        url.searchParams.append(key, value)
+      // Support "key=value" or "key=value&key2=value2"
+      const pairs = getCredentials.split('&')
+      for (const pair of pairs) {
+        const [key, ...rest] = pair.split('=')
+        const value = rest.join('=')
+        if (key && value) {
+          url.searchParams.append(key, value)
+        }
       }
-    } else if (Array.isArray(getCredentials) && getCredentials.length === 2) {
-      const [key, value] = getCredentials
-      if (key && value) {
+    } else if (Array.isArray(getCredentials)) {
+      if (getCredentials.length === 2 && !Array.isArray(getCredentials[0])) {
+        // ["key", "value"]
+        const [key, value] = getCredentials
+        if (key && value) {
+          url.searchParams.append(key, value)
+        }
+      } else {
+        // [["key1", "value1"], ["key2", "value2"]]
+        for (const entry of getCredentials) {
+          if (Array.isArray(entry) && entry.length >= 2) {
+            url.searchParams.append(entry[0], entry[1])
+          }
+        }
+      }
+    } else if (typeof getCredentials === 'object') {
+      // { key1: "value1", key2: "value2" }
+      for (const [key, value] of Object.entries(getCredentials)) {
         url.searchParams.append(key, value)
       }
     }

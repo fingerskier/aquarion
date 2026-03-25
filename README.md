@@ -16,14 +16,13 @@ D. If the target directory exists then the download is skipped: i.e. the client 
 
 ## CLI Usage
 
-`npx aquarion <config.json> update`
+`npx aquarion <config> [update]`
 
-You provide a `config.json` with necessary info:
-  e.g. auto-generate a config file which contains necessary settings and temporary credentials.
-
-Run this command to run normally:
-`npx aquarion config.json`
-
+The config argument can be a file path or an inline JSON string:
+```
+npx aquarion config.json
+npx aquarion '{"remote":"https://example.com","installDirectory":"./app"}'
+```
 
 Run this command to update/reinstall:
 `npx aquarion config.json --update`
@@ -59,9 +58,11 @@ i.e. just do npm-level commands via `aquarion` config.
 
 `timeout` ~ number of seconds after which the download attempt is cancelled.  
 
-`getCredentials` ~ for HTTP GET requests: this adds a query string; can be a string or a key/value array:
-  * "val=1234"
-  * ["key": "val"]
+`getCredentials` ~ for HTTP GET requests: this adds query parameters. Supports multiple formats:
+  * string: `"key=val"` or `"a=1&b=2"`
+  * key/value array: `["key", "val"]`
+  * array of arrays: `[["a", "1"], ["b", "2"]]`
+  * object: `{"a": "1", "b": "2"}`
 
 `authHeader` ~ adds an Authorization header to the request
   * e.g. you could auto-generate a token in this file, client runs it to install, then the token is invalidated after (which is okay because `aquarion` will run locally by default after installed.)  
