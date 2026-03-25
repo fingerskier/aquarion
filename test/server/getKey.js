@@ -7,7 +7,7 @@ export default async function(req, res) {
     console.log(global.keys)
     
     let config = {
-      "remote": "http://localhost:3000/download/key",
+      "remote": "http://localhost:3000/downloadApp",
       "timeout": 60,
       "getCredentials": "api_key="+newKey,
       "installDirectory": "./test/app",

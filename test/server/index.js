@@ -13,14 +13,20 @@ global.keys = {}
 
 app.use(express.static('public'))
 
+// Unauthenticated download (for basic testing)
+app.get('/download', downloader)
+
+// Authenticated download (requires API key)
 app.get('/downloadApp', apiKeyAuth, downloader)
 
 app.get('/getConfig', getKey)
 
 
 // Start the server
-const PORT = 3000
+const PORT = process.env.PORT || 3000
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Test server running on http://localhost:${PORT}`)
 })
+
+export { app, server }
